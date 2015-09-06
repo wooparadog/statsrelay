@@ -228,7 +228,6 @@ func readUDP(ip string, port int, c chan []byte) {
 		log.Printf("Error opening UDP socket.\n")
 		log.Fatalln(err)
 	}
-	defer sock.Close()
 
 	log.Printf("Setting socket read buffer size to: %d\n", sockBufferMaxSize())
 	err = sock.SetReadBuffer(sockBufferMaxSize())
@@ -245,34 +244,39 @@ func readUDP(ip string, port int, c chan []byte) {
 	if verbose {
 		log.Printf("Rock and Roll!\n")
 	}
-	for {
-		if buff == nil {
-			buff = new([BUFFERSIZE]byte)
-			offset = 0
-			timeout = false
-		}
+	for i := 0; i <= 10; i++ {
+		go func() {
+			defer sock.Close()
+			for {
+				if buff == nil {
+					buff = new([BUFFERSIZE]byte)
+					offset = 0
+					timeout = false
+				}
 
-		i, err := sock.Read(buff[offset:])
-		if err == nil {
-			buff[offset+i] = '\n'
-			offset = offset + i + 1
-		} else if err.(net.Error).Timeout() {
-			timeout = true
-			err = sock.SetDeadline(time.Now().Add(time.Second))
-			if err != nil {
-				log.Panicln(err)
+				i, err := sock.Read(buff[offset:])
+				if err == nil {
+					buff[offset+i] = '\n'
+					offset = offset + i + 1
+				} else if err.(net.Error).Timeout() {
+					timeout = true
+					err = sock.SetDeadline(time.Now().Add(time.Second))
+					if err != nil {
+						log.Panicln(err)
+					}
+				} else {
+					log.Printf("Read Error: %s\n", err)
+					continue
+				}
+
+				if offset > BUFFERSIZE-4096 || timeout {
+					// Approching make buff size
+					// we use a 4KiB margin
+					c <- buff[:offset]
+					buff = nil
+				}
 			}
-		} else {
-			log.Printf("Read Error: %s\n", err)
-			continue
-		}
-
-		if offset > BUFFERSIZE-4096 || timeout {
-			// Approching make buff size
-			// we use a 4KiB margin
-			c <- buff[:offset]
-			buff = nil
-		}
+		}()
 	}
 }
 
