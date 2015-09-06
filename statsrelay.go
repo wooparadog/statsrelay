@@ -214,9 +214,6 @@ func handleBuff(buff []byte) {
 // readUDP() a goroutine that just reads data off of a UDP socket and fills
 // buffers.  Once a buffer is full, it passes it to handleBuff().
 func readUDP(ip string, port int, c chan []byte) {
-	var buff *[BUFFERSIZE]byte
-	var offset int
-	var timeout bool
 	var addr = net.UDPAddr{
 		Port: port,
 		IP:   net.ParseIP(ip),
@@ -246,6 +243,9 @@ func readUDP(ip string, port int, c chan []byte) {
 	}
 	for i := 0; i <= 10; i++ {
 		go func() {
+			var buff *[BUFFERSIZE]byte
+			var offset int
+			var timeout bool
 			defer sock.Close()
 			for {
 				if buff == nil {
