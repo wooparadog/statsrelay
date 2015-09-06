@@ -283,7 +283,7 @@ func readUDP(ip string, port int, c chan []byte) {
 // runServer() runs and manages this daemon, deals with OS signals, and handles
 // communication channels.
 func runServer(host string, port int) {
-	var c chan []byte = make(chan []byte, 256)
+	var c chan []byte = make(chan []byte, 1024)
 	// Set up channel on which to send signal notifications.
 	// We must use a buffered channel or risk missing the signal
 	// if we're not ready to receive when the signal is sent.
